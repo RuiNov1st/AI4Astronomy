@@ -23,5 +23,4 @@ CONTINUE_EPOCH = 0
 
 # 模型pro设置
 DATA_AUGMENTATION = False
-DATA_EBV = True
-MODEL_MODE = 'regression'
+DATA_EBV = False
