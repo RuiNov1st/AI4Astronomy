@@ -3,4 +3,7 @@ __pycache__/
 /data/*
 /output/*
 /weights/*
+/wandb/*
 /logs/*
+/paper/*
+/debug/*

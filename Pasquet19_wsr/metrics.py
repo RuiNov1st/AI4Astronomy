@@ -5,7 +5,8 @@ from astropy.visualization import make_lupton_rgb
 
 def compute_metrics(pred_red,labels):
     def outlier_compute(deltaz,nmad):
-        return len(np.where(np.abs(deltaz)>5*nmad)[0])/len(deltaz)
+        # return len(np.where(np.abs(deltaz)>5*nmad)[0])/len(deltaz)
+        return len(np.where(np.abs(deltaz)>0.15)[0])/len(deltaz)
     # delta z
     deltaz = (pred_red - labels)/(1+labels)
     # bias
@@ -38,7 +39,7 @@ def compute_maxpdf_z(predictions,zbins_midpoint,z_max):
 
 
 ''' Function that makes plots '''
-def make_plot(pred_red,labels,deltaz,nmad,model_name = 'model'):
+def make_plot(pred_red,labels,deltaz,bias,nmad,outlier,model_name = 'model'):
     """
         Makes a histogram of the prediction bias and a plot of the estimated Photometric redshift 
         and the Prediction bias versus the Spectroscopic redshift given the labels, red, dz, smad,
@@ -61,8 +62,8 @@ def make_plot(pred_red,labels,deltaz,nmad,model_name = 'model'):
     """
     # Constructing the filenames
     
-    file_name_01 = f'./output/Residuals_{model_name}.png'
-    file_name_02 = f'./output/Plot_{model_name}.png'
+    file_name_01 = f'./output/{model_name}/Residuals_{model_name}.png'
+    file_name_02 = f'./output/{model_name}/Plot_{model_name}.png'
     # Plotting the residuals 
     plt.figure()
     plt.hist(deltaz, bins=100)
@@ -78,19 +79,30 @@ def make_plot(pred_red,labels,deltaz,nmad,model_name = 'model'):
     axis = fig.add_axes([0,0.4,1,1])
     axis2 = fig.add_axes([0,0,1,0.3])
     axis.set_ylabel('Photometric Redshift')
-    axis2.set_ylabel('bias (Δz)')
+    axis2.set_ylabel('bias Δz/(1+z)')
     axis2.set_xlabel('Spectroscopic Redshift')
     lim = np.max(labels)
     axis.plot([0, lim], [0, lim], 'k-', lw=1)
     axis.set_xlim([0, lim])
     axis.set_ylim([0,lim])
-    axis2.plot([0, lim], [nmad, nmad], 'k-', lw=1)
+
+    # outlier indicator:
+    x_z = np.arange(0,lim,0.1)
+    axis.plot(x_z,0.15*(1+x_z)+x_z,'steelblue',linestyle = '--',lw=1)
+    axis.plot(x_z,-0.15*(1+x_z)+x_z,'steelblue',linestyle = '--',lw=1)
+    axis.text(0.1, 0.95, f'Bias: {bias:.4f}\nNMAD: {nmad:.4f}\nOutlier fraction:{outlier:.4f}',transform=axis.transAxes,verticalalignment='top', horizontalalignment='left')
+
+
+    axis2.plot([0, lim], [0, 0], 'k-', lw=1)
     axis2.set_xlim([0, lim])
     # axis.plot(labels,red,'ko', markersize=0.3, alpha=0.3)
     axis.scatter(labels,pred_red,marker='o',color='k',s=0.3,alpha=0.3)
     #axis.hist2d(labels,red,bins =150)
     # axis2.plot(labels,  np.asarray(red) - np.asarray(labels),'ko', markersize=0.3, alpha=0.3)
-    axis2.scatter(labels,  np.asarray(pred_red) - np.asarray(labels),color='k',marker='o',s=0.3,alpha=0.3)
+    # axis2.scatter(labels,  np.asarray(pred_red) - np.asarray(labels),color='k',marker='o',s=0.3,alpha=0.3)
+    axis2.scatter(labels,  deltaz,color='k',marker='o',s=0.3,alpha=0.3)
+    axis2.axhline(0.15,color='steelblue',linestyle='--',lw=1)
+    axis2.axhline(-0.15,color='steelblue',linestyle='--',lw=1)
     
     
     plt.savefig(file_name_02,dpi = 300,transparent = False,bbox_inches = 'tight')
@@ -167,7 +179,7 @@ def check_probability(images,pred_red,labels,predictions,zbins,model_name,predic
 
     
     # plt.show()
-    plt.savefig(f'./output/check_pdf_{model_name}.png',dpi=200)
+    plt.savefig(f'./output/{model_name}/check_pdf_{model_name}.png',dpi=200)
 
 
 def print_history(history,model_name):
@@ -180,9 +192,9 @@ def print_history(history,model_name):
     plt.title('Model accuracy&loss')
     plt.xlabel('Epoch')
     plt.legend(['Train_acc', 'Val_acc', 'Train_loss', 'Val_loss'])
-    plt.savefig(f'./output/{model_name}_loss_acc.png')
-    np.save(f'./output/{model_name}_val_loss.npy', np.array(history.history['val_loss']))
-    np.save(f'./output/{model_name}_val_accuracy.npy', np.array(history.history['val_accuracy']))
+    plt.savefig(f'./output/{model_name}/{model_name}_loss_acc.png')
+    np.save(f'./output/{model_name}/{model_name}_val_loss.npy', np.array(history.history['val_loss']))
+    np.save(f'./output/{model_name}/{model_name}_val_accuracy.npy', np.array(history.history['val_accuracy']))
 
 
     print("Save loss&accuracy Curve successfully!")
@@ -195,3 +207,62 @@ def print_history(history,model_name):
     return int(np.argmin(history.history['val_loss']))+1
 
     
+
+def metrics_z_plot(z_pred,z_true,model_name,interval=0.5):
+    """
+    计算各个指标随红移范围的变化
+    """
+    # 计算红移分段：
+    z_min = 0.
+    z_max = np.max(z_true)
+    z_max = (z_max+interval)//interval*interval
+
+    z_intervals = np.arange(z_min,z_max+interval,interval)
+
+    # 各红移段指标计算：
+    deltaz_list,bias_list,nmad_list,outlier_list = [],[],[],[]
+    for i in range(1,len(z_intervals)):
+        # 找到处于这个范围的数据index：
+        idx = np.where((z_intervals[i-1]<=z_true) & (z_true<z_intervals[i]))[0]
+        # 获取该范围的数据
+        true_data = z_true[idx]
+        pred_data = z_pred[idx]
+
+        # 计算这个范围的指标
+        if len(true_data) == 0:
+            deltaz,bias,nmad,outlier = np.nan, np.nan, np.nan, np.nan
+        else:
+            deltaz,bias,nmad,outlier = compute_metrics(pred_data,true_data)
+        deltaz_list.append(deltaz)
+        bias_list.append(bias)
+        nmad_list.append(nmad)
+        outlier_list.append(outlier)
+    
+    # 绘图
+    x = [(z_intervals[i]+z_intervals[i+1])/2 for i in range(len(z_intervals)-1)]
+    metrics_name = ['Bias','NMAD','Outlier_fraction']
+    metrics_data = [bias_list,nmad_list,outlier_list]
+    fig, axs = plt.subplots(3, 1,figsize=(6,12))
+    plt.subplots_adjust(wspace=0.3,hspace=0.3)
+    # plt.tight_layout()
+    for i in range(len(metrics_name)):
+        ax1 = axs[i]
+        ax1.plot(x, metrics_data[i],label=metrics_name[i],color='steelblue')
+        ax1.scatter(x, metrics_data[i],label=metrics_name[i])
+        for j, value in enumerate(metrics_data[i]):
+            ax1.annotate(f'{value:.2f}', (x[j], metrics_data[i][j]), textcoords="offset points", xytext=(0,5), ha='center')
+        
+        ax1.axhline(0.,linestyle='--',color='k')
+        ax1.set_xlabel('z')
+        ax1.set_ylabel(metrics_name[i], color='steelblue')
+        ax1.tick_params(axis='y', labelcolor='steelblue')
+
+        # 创建共享x轴的第二个y轴
+        ax2 = ax1.twinx()
+
+        ax2.hist(z_true,bins=int(z_max/interval),range=[0.,z_max],alpha=0.5,color='orange')
+        ax2.set_ylabel('Count', color='orange')
+        ax2.tick_params(axis='y', labelcolor='orange')
+        axs[i].set_title(f"{metrics_name[i]} - z")
+
+    plt.savefig(f'./output/{model_name}/{model_name}_metrics-z.png')

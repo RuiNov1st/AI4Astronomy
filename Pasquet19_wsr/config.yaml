@@ -1,0 +1,45 @@
+Experiment:
+  Project_name: 'DESI+DL'
+  Description: 'Pasquet19实验EmG_AGN_sv13数据集DESI+颜色（去掉全波段缺失数据，限制星等）'
+  Run_name: &Run_name 'EmG_AGN_sv13_Pasquet19_0920_limitmag_color'
+  Run_id: ''
+  Group: 'EmG_AGN_sv13'
+
+Data:
+  IMG_PATH: '/data/home/wsr/Workspace/dl/dr10_dataset/EmG_AGN/dataset/sv13/limit_mag/images1_limit_mag_color.npy'
+  LABEL_PATH: '/data/home/wsr/Workspace/dl/dr10_dataset/EmG_AGN/dataset/sv13/limit_mag/labels1_limit_mag.npy'
+  EBV_PATH: '/data/home/wsr/Workspace/dl/dr10_dataset/EmG_AGN/dataset/sv13/limit_mag/ebv1_limit_mag.npy'
+  CATALOG_PATH: '/data/home/wsr/Workspace/dl/dr10_dataset/EmG_AGN/dataset/sv13/limit_mag/limit_mag.csv'
+
+  Z_USE_DEFAULT: False
+  Z_MIN: 0.0
+  Z_MAX: 1.5
+
+  ZBINS_GAP_DEFAULT: 0.0022
+
+  NBINS_MAX: 180
+
+  VALIDATION_SIZE: 0.06
+  TEST_SIZE: 0.2
+
+  # 数据pro设置
+  DATA_TYPE: 'DESI_COLOR'  # DESI, DESI_COLOR, WISE, WISE_COLOR, WISE_COLOR-WISE
+    
+  DATA_AUGMENTATION: True
+  DATA_EBV: True
+  IMAGE_SIZE: 64
+
+Train:
+  BATCH_SIZE: 512
+  EPOCH: 30
+  LEARNING_RATE: 0.001
+  CONTINUE_TRAIN: False
+  CONTINUE_EPOCH: 0
+
+Model:
+  MODEL_NAME: *Run_name
+
+
+
+
+
