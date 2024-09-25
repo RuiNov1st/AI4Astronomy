@@ -1,0 +1,46 @@
+Experiment:
+  Project_name: 'DESI+DL'
+  Description: 'Henghes22 debug'
+  Run_name: &Run_name 'Henghes22_debug'
+  Run_id: ''
+  Group: 'Henghes22'
+
+Data:
+  IMG_PATH: '/data/home/wsr/Workspace/dl/dr10_dataset/EmG_AGN/dataset/sv13/limit_mag/images1_limit_mag.npy'
+  LABEL_PATH: '/data/home/wsr/Workspace/dl/dr10_dataset/EmG_AGN/dataset/sv13/limit_mag/labels1_limit_mag.npy'
+  EBV_PATH: '/data/home/wsr/Workspace/dl/dr10_dataset/EmG_AGN/dataset/sv13/limit_mag/ebv1_limit_mag.npy'
+  CATALOG_PATH: '/data/home/wsr/Workspace/dl/dr10_dataset/EmG_AGN/dataset/sv13/limit_mag/limit_mag.csv'
+
+  Z_USE_DEFAULT: False
+  Z_MIN: 0.0
+  Z_MAX: 1.5
+
+  ZBINS_GAP_DEFAULT: 0.0022
+
+  NBINS_MAX: 180
+
+  VALIDATION_SIZE: 0.06
+  TEST_SIZE: 0.2
+
+  # 数据pro设置
+  DATA_TYPE: 'DESI'  # DESI, DESI_COLOR, WISE, WISE_COLOR, WISE_COLOR-WISE
+  CATALOG_COLUMN: ['MAG_G','MAG_R','MAG_I','MAG_Z','MAG_W1','MAG_W2','ebv']
+  DATA_AUGMENTATION: True
+  DATA_EBV: True
+  LABEL_ENCODE: False
+  IMAGE_SIZE: 64
+
+Train:
+  BATCH_SIZE: 64
+  EPOCH: 30
+  LEARNING_RATE: 0.001
+  CONTINUE_TRAIN: False
+  CONTINUE_EPOCH: 0
+
+Model:
+  MODEL_NAME: *Run_name
+
+
+
+
+
